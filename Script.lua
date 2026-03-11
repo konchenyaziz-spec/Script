@@ -1,118 +1,121 @@
 --[[
-    IDKKKK HUB v1.2.2
-    FIXED BUILD
+    IDKKKK HUB v1.3
+    Library: Rayfield (Stable & Fast)
 ]]
 
-if getgenv().idkkkk_executed then return end
-getgenv().idkkkk_executed = true
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local plrs = game:GetService("Players")
-local lp = plrs.LocalPlayer
+local Window = Rayfield:CreateWindow({
+   Name = "idkkkk HUB | v1.3",
+   LoadingTitle = "Загрузка IDKKKK HUB...",
+   LoadingSubtitle = "by Gemini",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "idkkkk_configs",
+      FileName = "MainHub"
+   },
+   KeySystem = false -- Система ключей отключена для удобства
+})
+
+-- Переменные состояния
+local lp = game:GetService("Players").LocalPlayer
 local run_svc = game:GetService("RunService")
-
 local visual_settings = {
     boxes = false,
     chinahat = false,
     jumpcircles = false
 }
 
--- [[ ОКНО ]]
-local Window = Fluent:CreateWindow({
-    Title = "idkkkk HUB",
-    SubTitle = "v1.2.2",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = false, -- Отключил акрил для стабильности на мобилках
-    Theme = "Darker",
-    MinimizeKey = Enum.KeyCode.RightControl
+-- [[ ВКЛАДКА MAIN ]]
+local MainTab = Window:CreateTab("Main", 4483362458) -- Иконка Home
+
+MainTab:CreateSlider({
+   Name = "WalkSpeed (Скорость)",
+   Range = {16, 300},
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "WS_Slider",
+   Callback = function(Value)
+      if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+          lp.Character.Humanoid.WalkSpeed = Value
+      end
+   end,
 })
-
-local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
-    Troll = Window:AddTab({ Title = "Trolling", Icon = "zap" }),
-    Visuals = Window:AddTab({ Title = "Visuals", Icon = "eye" })
-}
-
--- [[ ФУНКЦИИ ]]
-Tabs.Main:AddSlider("WS", { Title = "WalkSpeed", Default = 16, Min = 16, Max = 300, Rounding = 1, Callback = function(v) if lp.Character and lp.Character:FindFirstChild("Humanoid") then lp.Character.Humanoid.WalkSpeed = v end end })
 
 local flying = false
 local flySpeed = 50
-Tabs.Main:AddToggle("Fly", { Title = "Admin Fly", Default = false, Callback = function(v) 
-    flying = v 
-    if v and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-        task.spawn(function()
-            local hrp = lp.Character.HumanoidRootPart
-            local bv = Instance.new("BodyVelocity", hrp)
-            local bg = Instance.new("BodyGyro", hrp)
-            bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-            bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-            while flying do
-                run_svc.RenderStepped:Wait()
-                bv.velocity = (workspace.CurrentCamera.CFrame.LookVector * (lp.Character.Humanoid.MoveDirection.Magnitude > 0 and flySpeed or 0))
-                bg.cframe = workspace.CurrentCamera.CFrame
-            end
-            bv:Destroy()
-            bg:Destroy()
-        end)
-    end
-end})
+MainTab:CreateToggle({
+   Name = "Admin Fly (Полет)",
+   CurrentValue = false,
+   Flag = "FlyToggle",
+   Callback = function(Value)
+      flying = Value
+      if Value and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+          task.spawn(function()
+              local hrp = lp.Character.HumanoidRootPart
+              local bv = Instance.new("BodyVelocity", hrp)
+              local bg = Instance.new("BodyGyro", hrp)
+              bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+              bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+              while flying do
+                  run_svc.RenderStepped:Wait()
+                  bv.velocity = (workspace.CurrentCamera.CFrame.LookVector * (lp.Character.Humanoid.MoveDirection.Magnitude > 0 and flySpeed or 0))
+                  bg.cframe = workspace.CurrentCamera.CFrame
+              end
+              bv:Destroy()
+              bg:Destroy()
+          end)
+      end
+   end,
+})
 
--- [[ JUMP CIRCLES ]]
-local function onJump(old, new)
-    if new == Enum.HumanoidStateType.Jumping and visual_settings.jumpcircles then
-        local root = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            local p = Instance.new("Part", workspace)
-            p.Anchored = true
-            p.CanCollide = false
-            p.Transparency = 0.5
-            p.Color = Color3.new(1, 1, 1)
-            p.Material = Enum.Material.Neon
-            p.Size = Vector3.new(1, 0.1, 1)
-            p.CFrame = CFrame.new(root.Position - Vector3.new(0, 3, 0))
-            local m = Instance.new("SpecialMesh", p)
-            m.MeshType = Enum.MeshType.Cylinder
-            task.spawn(function()
-                for i = 1, 20 do
-                    p.Size = p.Size + Vector3.new(0.6, 0, 0.6)
-                    p.Transparency = p.Transparency + 0.03
-                    task.wait(0.02)
-                end
-                p:Destroy()
-            end)
-        end
-    end
-end
+-- [[ ВКЛАДКА TROLLING ]]
+local TrollTab = Window:CreateTab("Trolling", 4483345998)
 
-if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-    lp.Character.Humanoid.StateChanged:Connect(onJump)
-end
-lp.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid").StateChanged:Connect(onJump)
-end)
+TrollTab:CreateButton({
+   Name = "Fling Players (Закрутить всех)",
+   Callback = function()
+       local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+       if hrp then
+           local bfv = Instance.new("BodyAngularVelocity", hrp)
+           bfv.AngularVelocity = Vector3.new(0, 99999, 0)
+           bfv.MaxTorque = Vector3.new(0, math.huge, 0)
+           bfv.P = math.huge
+           Rayfield:Notify({Title = "Fling Active", Content = "Вы начали крутиться! Подойдите к игроку.", Duration = 3})
+           task.wait(3)
+           bfv:Destroy()
+       end
+   end,
+})
 
--- [[ TROLLING ]]
-Tabs.Troll:AddButton({ Title = "Fling Players", Callback = function()
-    local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        local bfv = Instance.new("BodyAngularVelocity", hrp)
-        bfv.AngularVelocity = Vector3.new(0, 99999, 0)
-        bfv.MaxTorque = Vector3.new(0, math.huge, 0)
-        bfv.P = math.huge
-        task.wait(2)
-        bfv:Destroy()
-    end
-end})
+-- [[ ВКЛАДКА VISUALS ]]
+local VisualTab = Window:CreateTab("Visuals", 4483346362)
 
--- [[ VISUALS ]]
-Tabs.Visuals:AddToggle("Box3D", { Title = "3D Box ESP", Default = false, Callback = function(v) visual_settings.boxes = v end })
-Tabs.Visuals:AddToggle("CHat", { Title = "China Hat", Default = false, Callback = function(v) visual_settings.chinahat = v end })
-Tabs.Visuals:AddToggle("JCir", { Title = "Jump Circles", Default = false, Callback = function(v) visual_settings.jumpcircles = v end })
+VisualTab:CreateToggle({
+   Name = "3D Box ESP (Враги в коробках)",
+   CurrentValue = false,
+   Flag = "ESP_Box",
+   Callback = function(Value) visual_settings.boxes = Value end,
+})
 
+VisualTab:CreateToggle({
+   Name = "China Hat (Шляпа)",
+   CurrentValue = false,
+   Flag = "HatToggle",
+   Callback = function(Value) visual_settings.chinahat = Value end,
+})
+
+VisualTab:CreateToggle({
+   Name = "Jump Circles (Круги при прыжке)",
+   CurrentValue = false,
+   Flag = "JumpToggle",
+   Callback = function(Value) visual_settings.jumpcircles = Value end,
+})
+
+-- [[ ЛОГИКА ОБНОВЛЕНИЯ (RENDER STEPPED) ]]
 run_svc.RenderStepped:Connect(function()
-    -- China Hat logic
+    -- China Hat
     if visual_settings.chinahat and lp.Character and lp.Character:FindFirstChild("Head") then
         local head = lp.Character.Head
         local hat = head:FindFirstChild("ChinaHat")
@@ -122,7 +125,7 @@ run_svc.RenderStepped:Connect(function()
             hat.CanCollide = false
             hat.Parent = head
             hat.Material = Enum.Material.Neon
-            hat.Color = Color3.new(1, 0, 0)
+            hat.Color = Color3.fromRGB(255, 50, 50)
             local mesh = Instance.new("SpecialMesh", hat)
             mesh.MeshType = Enum.MeshType.FileMesh
             mesh.MeshId = "rbxassetid://177899205"
@@ -133,20 +136,19 @@ run_svc.RenderStepped:Connect(function()
         lp.Character.Head.ChinaHat:Destroy()
     end
 
-    -- 3D Box ESP logic
-    for _, p in pairs(plrs:GetPlayers()) do
+    -- Box ESP
+    for _, p in pairs(game:GetService("Players"):GetPlayers()) do
         if p ~= lp and p.Character then
-            local box = p.Character:FindFirstChild("IDK_BOX")
+            local box = p.Character:FindFirstChild("IDK_ADORN")
             if visual_settings.boxes then
                 if not box then
                     box = Instance.new("BoxHandleAdornment")
-                    box.Name = "IDK_BOX"
+                    box.Name = "IDK_ADORN"
                     box.AlwaysOnTop = true
-                    box.ZIndex = 5
                     box.Adornee = p.Character
                     box.Color3 = Color3.new(1, 0, 0)
-                    box.Transparency = 0.5
-                    box.Size = p.Character:GetExtentsSize()
+                    box.Transparency = 0.6
+                    box.ZIndex = 10
                     box.Parent = p.Character
                 end
                 box.Size = p.Character:GetExtentsSize()
@@ -157,11 +159,38 @@ run_svc.RenderStepped:Connect(function()
     end
 end)
 
--- Вместо шарика используем уведомление о кнопке
-Fluent:Notify({
-    Title = "idkkkk HUB",
-    Content = "Нажми RightControl (или кнопку в углу), чтобы скрыть меню.",
-    Duration = 5
-})
+-- Jump Circles Logic
+local function jumpEffect(old, new)
+    if new == Enum.HumanoidStateType.Jumping and visual_settings.jumpcircles then
+        local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local p = Instance.new("Part", workspace)
+            p.Anchored, p.CanCollide = true, false
+            p.Transparency, p.Material = 0.5, Enum.Material.Neon
+            p.Size = Vector3.new(1, 0.1, 1)
+            p.CFrame = CFrame.new(hrp.Position - Vector3.new(0, 3, 0))
+            local m = Instance.new("SpecialMesh", p)
+            m.MeshType = Enum.MeshType.Cylinder
+            task.spawn(function()
+                for i = 1, 15 do
+                    p.Size = p.Size + Vector3.new(0.8, 0, 0.8)
+                    p.Transparency = p.Transparency + 0.04
+                    task.wait(0.02)
+                end
+                p:Destroy()
+            end)
+        end
+    end
+end
 
-Window:SelectTab(1)
+lp.CharacterAdded:Connect(function(c) c:WaitForChild("Humanoid").StateChanged:Connect(jumpEffect) end)
+if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+    lp.Character.Humanoid.StateChanged:Connect(jumpEffect)
+end
+
+Rayfield:Notify({
+   Title = "Успешно!",
+   Content = "IDKKKK HUB v1.3 загружен. Используйте кнопку Rayfield для закрытия.",
+   Duration = 5,
+   Image = 4483362458,
+})
