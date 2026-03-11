@@ -1,7 +1,7 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "idkkkk hub | v1.6",
+   Name = "idkkkk hub | v1.6 Visual Plus",
    LoadingTitle = "idkkkk hub",
    LoadingSubtitle = "by IDKKK team",
    ConfigurationSaving = { Enabled = false },
@@ -10,21 +10,26 @@ local Window = Rayfield:CreateWindow({
 
 local lp = game:GetService("Players").LocalPlayer
 local run_svc = game:GetService("RunService")
-local visual_settings = {
+local camera = workspace.CurrentCamera
+
+local settings = {
     boxes = false,
+    tracers = false,
     chinahat = false,
-    jumpcircles = false
+    jumpcircles = false,
+    rgb_speed = 1
 }
 
-local banging = false
-local bangTarget = nil
+local function getRGB()
+    local t = tick() * settings.rgb_speed
+    return Color3.fromHSV(t % 1, 0.8, 1)
+end
 
 local MainTab = Window:CreateTab("Main", 4483362458)
-
 MainTab:CreateSection("Локальный игрок")
 
 MainTab:CreateSlider({
-   Name = "WalkSpeed",
+   Name = "Скорость (WalkSpeed)",
    Range = {16, 300},
    Increment = 1,
    CurrentValue = 16,
@@ -35,155 +40,75 @@ MainTab:CreateSlider({
    end,
 })
 
-MainTab:CreateSection("Контакты")
-
-MainTab:CreateButton({
-   Name = "Telegram: @idkkkk_dev",
-   Callback = function()
-       setclipboard("https://t.me/idkkkk_dev")
-       Rayfield:Notify({
-           Title = "Telegram",
-           Content = "Ссылка скопирована в буфер обмена!",
-           Duration = 5
-       })
-   end,
-})
-
-local TrollTab = Window:CreateTab("Trolling", 4483345998)
-
-TrollTab:CreateInput({
-   Name = "Target Name",
-   PlaceholderText = "Target...",
-   RemoveTextAfterFocusLost = false,
-   Callback = function(Text)
-       for _, v in pairs(game:GetService("Players"):GetPlayers()) do
-           if v.Name:lower():find(Text:lower()) or v.DisplayName:lower():find(Text:lower()) then
-               bangTarget = v
-               break
-           end
-       end
-   end,
-})
-
-TrollTab:CreateToggle({
-   Name = "Bang",
-   CurrentValue = false,
-   Callback = function(Value)
-       banging = Value
-       if Value then
-           task.spawn(function()
-               while banging do
-                   if bangTarget and bangTarget.Character and bangTarget.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-                       local targetHrp = bangTarget.Character.HumanoidRootPart
-                       local myHrp = lp.Character.HumanoidRootPart
-                       for i = 1, 6 do
-                           if not banging then break end
-                           myHrp.CFrame = targetHrp.CFrame * CFrame.new(0, 0, 0.9 + (i/10))
-                           run_svc.Heartbeat:Wait()
-                       end
-                       for i = 6, 1, -1 do
-                           if not banging then break end
-                           myHrp.CFrame = targetHrp.CFrame * CFrame.new(0, 0, 0.9 + (i/10))
-                           run_svc.Heartbeat:Wait()
-                       end
-                   else
-                       run_svc.Heartbeat:Wait()
-                   end
-               end
-           end)
-       end
-   end,
-})
-
 local VisualTab = Window:CreateTab("Visuals", 4483346362)
 
 VisualTab:CreateToggle({
-   Name = "3D Box ESP",
+   Name = "Улучшенные Box ESP",
    CurrentValue = false,
-   Callback = function(Value) visual_settings.boxes = Value end,
+   Callback = function(Value) settings.boxes = Value end,
 })
 
 VisualTab:CreateToggle({
-   Name = "Small China Hat",
+   Name = "Линии (Tracers)",
    CurrentValue = false,
-   Callback = function(Value) visual_settings.chinahat = Value end,
+   Callback = function(Value) settings.tracers = Value end,
 })
 
 VisualTab:CreateToggle({
-   Name = "Big Jump Circles",
+   Name = "RGB China Hat (Красивая)",
    CurrentValue = false,
-   Callback = function(Value) visual_settings.jumpcircles = Value end,
+   Callback = function(Value) settings.chinahat = Value end,
 })
 
-run_svc.RenderStepped:Connect(function()
-    if visual_settings.chinahat and lp.Character and lp.Character:FindFirstChild("Head") then
-        local head = lp.Character.Head
-        local hat = head:FindFirstChild("IDK_Hat")
-        if not hat then
-            hat = Instance.new("Part")
-            hat.Name = "IDK_Hat"
-            hat.CanCollide = false
-            hat.Parent = head
-            hat.Size = Vector3.new(1.2, 0.2, 1.2)
-            hat.Material = Enum.Material.Neon
-            hat.Color = Color3.fromRGB(255, 0, 100)
-            hat.Transparency = 0.3
-            
-            local mesh = Instance.new("SpecialMesh", hat)
-            mesh.MeshType = Enum.MeshType.FileMesh
-            mesh.MeshId = "rbxassetid://1033714"
-            mesh.Scale = Vector3.new(1.5, 0.6, 1.5)
-        end
-        hat.CFrame = head.CFrame * CFrame.new(0, 0.55, 0)
-    elseif lp.Character and lp.Character.Head:FindFirstChild("IDK_Hat") then
-        lp.Character.Head.IDK_Hat:Destroy()
-    end
+VisualTab:CreateToggle({
+   Name = "Jump Circles + Текст",
+   CurrentValue = false,
+   Callback = function(Value) settings.jumpcircles = Value end,
+})
 
-    for _, p in pairs(game:GetService("Players"):GetPlayers()) do
-        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local container = p.Character:FindFirstChild("IDK_ESP_Box")
-            if visual_settings.boxes then
-                if not container then
-                    container = Instance.new("BoxHandleAdornment")
-                    container.Name = "IDK_ESP_Box"
-                    container.Parent = p.Character
-                    container.Adornee = p.Character
-                    container.AlwaysOnTop = true
-                    container.ZIndex = 5
-                    container.Transparency = 0.8
-                    container.Color3 = Color3.fromRGB(255, 255, 255)
-                    container.Size = Vector3.new(4, 5.5, 2)
-                end
-            else
-                if container then container:Destroy() end
-            end
-        end
-    end
-end)
-
+-- Функция для создания красивого круга при прыжке
 local function createJumpCircle()
-    if not visual_settings.jumpcircles then return end
+    if not settings.jumpcircles then return end
     local char = lp.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
+        local pos = char.HumanoidRootPart.Position - Vector3.new(0, 3, 0)
+        
+        -- Основной диск
         local p = Instance.new("Part")
         p.Name = "IDK_Circle"
         p.Parent = workspace
         p.Anchored = true
         p.CanCollide = false
-        p.CastShadow = false
-        p.Size = Vector3.new(2, 0.05, 2)
+        p.Size = Vector3.new(4, 0.1, 4)
         p.Material = Enum.Material.Neon
-        p.Color = Color3.fromRGB(0, 255, 255)
-        p.Transparency = 0.2
-        p.CFrame = CFrame.new(char.HumanoidRootPart.Position - Vector3.new(0, 2.9, 0))
+        p.Transparency = 0.4
+        p.CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, 0)
         
-        local m = Instance.new("SpecialMesh", p)
-        m.MeshType = Enum.MeshType.Cylinder
+        local mesh = Instance.new("SpecialMesh", p)
+        mesh.MeshType = Enum.MeshType.Cylinder -- Используем цилиндр для формы диска
+        
+        -- Интерфейс с надписью внутри круга
+        local gui = Instance.new("SurfaceGui", p)
+        gui.Face = Enum.NormalId.Top
+        gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+        gui.PixelsPerStud = 50
+        
+        local label = Instance.new("TextLabel", gui)
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = "IDKKKK HUB"
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.Font = Enum.Font.GothamBold
+        label.TextScaled = true
         
         task.spawn(function()
-            for i = 1, 30 do
-                p.Size = p.Size + Vector3.new(1.2, 0, 1.2)
-                p.Transparency = p.Transparency + 0.03
+            local hue = 0
+            for i = 1, 40 do
+                hue = hue + 0.02
+                p.Size = p.Size + Vector3.new(0.5, 0, 0.5)
+                p.Transparency = p.Transparency + 0.015
+                p.Color = Color3.fromHSV(hue % 1, 0.7, 1)
+                label.TextTransparency = p.Transparency
                 run_svc.Heartbeat:Wait()
             end
             p:Destroy()
@@ -191,6 +116,78 @@ local function createJumpCircle()
     end
 end
 
+-- Обработка визуалов в цикле
+run_svc.RenderStepped:Connect(function()
+    local rgb = getRGB()
+    
+    -- Красивая China Hat
+    if settings.chinahat and lp.Character and lp.Character:FindFirstChild("Head") then
+        local head = lp.Character.Head
+        local hat = head:FindFirstChild("IDK_Hat_V2")
+        if not hat then
+            hat = Instance.new("Part")
+            hat.Name = "IDK_Hat_V2"
+            hat.CanCollide = false
+            hat.Parent = head
+            hat.Size = Vector3.new(1.8, 0.2, 1.8)
+            hat.Material = Enum.Material.Neon
+            hat.Transparency = 0.2
+            
+            local mesh = Instance.new("SpecialMesh", hat)
+            mesh.MeshId = "rbxassetid://1033714" -- Классическая коническая форма
+            mesh.Scale = Vector3.new(2, 1, 2)
+        end
+        hat.CFrame = head.CFrame * CFrame.new(0, 0.6, 0)
+        hat.Color = rgb
+    elseif lp.Character and lp.Character:FindFirstChild("Head") and lp.Character.Head:FindFirstChild("IDK_Hat_V2") then
+        lp.Character.Head.IDK_Hat_V2:Destroy()
+    end
+
+    -- ESP и Трейсеры
+    for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+        if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local root = p.Character.HumanoidRootPart
+            
+            -- Box ESP
+            local box = p.Character:FindFirstChild("IDK_Visual_Box")
+            if settings.boxes then
+                if not box then
+                    box = Instance.new("BoxHandleAdornment", p.Character)
+                    box.Name = "IDK_Visual_Box"
+                    box.Adornee = p.Character
+                    box.AlwaysOnTop = true
+                    box.ZIndex = 10
+                    box.Transparency = 0.6
+                    box.Size = Vector3.new(4, 6, 1)
+                end
+                box.Color3 = rgb
+            elseif box then box:Destroy() end
+            
+            -- Tracers
+            local tracer = p.Character:FindFirstChild("IDK_Tracer")
+            if settings.tracers then
+                local screenPos, onScreen = camera:WorldToViewportPoint(root.Position)
+                if onScreen then
+                    if not tracer then
+                        tracer = Instance.new("Part", p.Character)
+                        tracer.Name = "IDK_Tracer"
+                        tracer.Anchored = true
+                        tracer.CanCollide = false
+                        tracer.Material = Enum.Material.Neon
+                        tracer.Transparency = 0.4
+                    end
+                    local startPos = camera:ViewportToWorldPoint(Vector3.new(camera.ViewportSize.X/2, 0, 10))
+                    local dist = (root.Position - startPos).Magnitude
+                    tracer.Size = Vector3.new(0.05, 0.05, dist)
+                    tracer.CFrame = CFrame.lookAt(startPos, root.Position) * CFrame.new(0, 0, -dist/2)
+                    tracer.Color = rgb
+                elseif tracer then tracer:Destroy() end
+            elseif tracer then tracer:Destroy() end
+        end
+    end
+end)
+
+-- Детекция прыжка
 local function setupDetection(char)
     local hum = char:WaitForChild("Humanoid")
     hum.StateChanged:Connect(function(_, new)
@@ -205,6 +202,7 @@ if lp.Character then setupDetection(lp.Character) end
 
 Rayfield:Notify({
    Title = "idkkkk hub",
-   Content = "v1.6 Loaded by IDKKK team. TG: @idkkkk_dev",
+   Content = "Визуалы обновлены! Наслаждайтесь.",
    Duration = 5
 })
+
