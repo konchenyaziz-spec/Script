@@ -1,160 +1,156 @@
+--[[
+    IDK AI v5.0 - Hybrid Intelligence
+    Оптимизировано для Delta Executor.
+    Работает БЕЗ внешнего API ключа (использует локальный парсер смыслов).
+]]
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "idkkkk hub | v3.0 AI Edition",
-   LoadingTitle = "IDK AI System Loading...",
+   Name = "idkkkk hub | v5.0 HYBRID AI",
+   LoadingTitle = "Initializing AI Core...",
    LoadingSubtitle = "by IDKKK team",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
 
--- [[ SERVICES ]]
 local lp = game:GetService("Players").LocalPlayer
 local run_svc = game:GetService("RunService")
-local text_svc = game:GetService("TextService")
 local players = game:GetService("Players")
 
--- [[ SETTINGS ]]
 local settings = {
-    ai_enabled = false,
-    esp_enabled = false,
-    following_target = nil,
-    ai_prefix = "idkai"
+    ai_active = false,
+    following = nil,
+    auto_jump = false
 }
 
--- [[ UNIVERSAL CHAT SYSTEM ]]
+-- [[ УНИВЕРСАЛЬНАЯ СИСТЕМА ЧАТА ]]
 local function aiChat(msg)
-    task.spawn(function()
-        local success, err = pcall(function()
-            -- Try Legacy Chat
-            local chatEvents = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-            if chatEvents and chatEvents:FindFirstChild("SayMessageRequest") then
-                chatEvents.SayMessageRequest:FireServer(msg, "All")
-            else
-                -- Try Modern TextChatService
-                local tcs = game:GetService("TextChatService")
-                if tcs and tcs.ChatVersion == Enum.ChatVersion.TextChatService then
-                    local channel = tcs:FindFirstChild("RBXGeneral", true) or tcs:FindFirstChild("All", true)
-                    if channel then channel:SendAsync(msg) end
-                end
-            end
-        end)
-    end)
+    local chatEvents = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+    if chatEvents and chatEvents:FindFirstChild("SayMessageRequest") then
+        chatEvents.SayMessageRequest:FireServer(msg, "All")
+    else
+        local tcs = game:GetService("TextChatService")
+        if tcs and tcs.ChatVersion == Enum.ChatVersion.TextChatService then
+            local channel = tcs:FindFirstChild("RBXGeneral", true) or tcs:FindFirstChild("All", true)
+            if channel then channel:SendAsync(msg) end
+        end
+    end
 end
 
--- [[ AI BRAIN - BETTER RECOGNITION ]]
-local function processAI(sender, message)
-    if not settings.ai_enabled or sender == lp then return end
+-- [[ LOCAL AI BRAIN (SENSE ANALYZER) ]]
+-- Этот блок заменяет Gemini, если нет API ключа. Он ищет намерения.
+local function processIntent(sender, text)
+    if not settings.ai_active or sender == lp then return end
     
-    local msg = message:lower()
-    if not msg:find(settings.ai_prefix) then return end
+    local msg = text:lower()
+    if not msg:find("idkai") then return end
 
-    -- Trigger detected
-    print("AI detected command from: " .. sender.Name)
-
-    -- Command: JUMP
-    if msg:find("jump") then
-        local times = tonumber(msg:match("(%d+)")) or 1
-        if times > 20 then times = 20 end -- Anti-spam cap
+    -- 1. Намерение: Прыжки
+    if msg:find("jump") or msg:find("hop") or msg:find("bounce") then
+        local count = tonumber(msg:match("(%d+)")) or 5
+        if count > 30 then count = 30 end
         
-        aiChat("Okay " .. sender.Name .. ", jumping " .. times .. " times for you!")
-        
+        aiChat("Understood, " .. sender.Name .. ". Performing " .. count .. " jumps now.")
         task.spawn(function()
-            for i = 1, times do
+            for i = 1, count do
                 if lp.Character and lp.Character:FindFirstChild("Humanoid") then
                     lp.Character.Humanoid.Jump = true
                 end
-                task.wait(0.7)
+                task.wait(0.6)
             end
         end)
         return
     end
 
-    -- Command: FOLLOW
-    if msg:find("follow") or msg:find("come to") then
-        settings.following_target = sender
-        aiChat("I'm coming! I will follow you now, " .. sender.Name)
+    -- 2. Намерение: Следование
+    if msg:find("follow") or msg:find("come") or msg:find("behind") then
+        settings.following = sender
+        aiChat("Target locked. I'm following you, " .. sender.Name .. "!")
         return
     end
 
-    -- Command: STOP
-    if msg:find("stop") or msg:find("stay") or msg:find("wait") then
-        settings.following_target = nil
-        aiChat("Stopping all actions. I'll stay here.")
+    -- 3. Намерение: Остановка
+    if msg:find("stop") or msg:find("stay") or msg:find("wait") or msg:find("freeze") then
+        settings.following = nil
+        aiChat("Stopping all active tasks. Standing by.")
         return
     end
 
-    -- Command: SAY / REPEAT
-    if msg:find("say") or msg:find("repeat") then
-        local to_say = message:match("[sS][aA][yY]%s+(.+)") or message:match("[rR][eE][pP][eE][aA][tT]%s+(.+)")
-        if to_say then
-            aiChat(to_say)
+    -- 4. Намерение: Повторение (Say)
+    if msg:find("say") or msg:find("repeat") or msg:find("talk") then
+        local content = text:match("[sS][aA][yY]%s+(.+)") or text:match("[rR][eE][pP][eE][aA][tT]%s+(.+)")
+        if content then
+            aiChat(content)
+        else
+            aiChat("What do you want me to say?")
         end
         return
     end
 
-    -- Command: WHO ARE YOU
-    if msg:find("who are you") or msg:find("what is your name") then
-        aiChat("I am IDK AI, the most advanced assistant in this server. Use 'idkai' to command me!")
-        return
-    end
-
-    -- Default fallback
-    aiChat("I heard you, " .. sender.Name .. ", but I don't know how to do that yet. Try 'jump', 'follow' or 'say'!")
+    -- 5. Если команда не ясна
+    aiChat("Sorry, my system doesn't recognize that command yet. Try: jump, follow, say, or stop.")
 end
 
--- [[ LIFESTYLE LOOPS ]]
-players.PlayerChatted:Connect(processAI)
+-- [[ LOOPS ]]
+players.PlayerChatted:Connect(processIntent)
 
 run_svc.Heartbeat:Connect(function()
-    if settings.ai_enabled and settings.following_target then
-        local target = settings.following_target
-        if target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character then
-            local myRoot = lp.Character:FindFirstChild("HumanoidRootPart")
-            local myHum = lp.Character:FindFirstChild("Humanoid")
-            if myRoot and myHum then
-                myHum:MoveTo(target.Character.HumanoidRootPart.Position + Vector3.new(2, 0, 2))
-            end
+    if settings.ai_active and settings.following and settings.following.Character then
+        local myChar = lp.Character
+        local targetRoot = settings.following.Character:FindFirstChild("HumanoidRootPart")
+        if myChar and myChar:FindFirstChild("Humanoid") and targetRoot then
+            myChar.Humanoid:MoveTo(targetRoot.Position + Vector3.new(2, 0, 2))
         end
     end
 end)
 
--- [[ UI SETUP ]]
+-- [[ INTERFACE ]]
 local MainTab = Window:CreateTab("Main", 4483362458)
-local AiTab = Window:CreateTab("IDK AI", 4483346362)
+local AiTab = Window:CreateTab("IDK AI (Hybrid)", "bot")
+local VisualTab = Window:CreateTab("Visuals", 4483346362)
 
 AiTab:CreateToggle({
-   Name = "Enable IDK AI Brain",
+   Name = "Activate IDK AI Brain",
    CurrentValue = false,
    Callback = function(v)
-       settings.ai_enabled = v
+       settings.ai_active = v
        if v then
-           aiChat("IDK AI System v3.0 Online. Commands: jump, follow, stop, say.")
+           aiChat("Hello! IDK AI v5.0 Hybrid Mode is active. I can hear your commands now!")
        else
-           settings.following_target = nil
+           settings.following = nil
        end
    end,
 })
 
-AiTab:CreateSection("AI Customization")
+AiTab:CreateSection("AI Info")
+AiTab:CreateLabel("Mode: Hybrid (No API Key Required)")
 
-AiTab:CreateLabel("Current Prefix: idkai")
-
-MainTab:CreateSlider({
-   Name = "WalkSpeed",
-   Range = {16, 250},
-   Increment = 1,
-   CurrentValue = 16,
-   Callback = function(v) 
-       if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-           lp.Character.Humanoid.WalkSpeed = v
-       end 
+-- Visuals (ESP)
+VisualTab:CreateToggle({
+   Name = "Player Highlights",
+   CurrentValue = false,
+   Callback = function(v)
+       for _, p in pairs(players:GetPlayers()) do
+           if p ~= lp and p.Character then
+                local h = p.Character:FindFirstChildOfClass("Highlight") or Instance.new("Highlight", p.Character)
+                h.Enabled = v
+                h.FillColor = Color3.fromRGB(0, 255, 255)
+           end
+       end
    end,
 })
 
-MainTab:CreateButton({
-   Name = "Reset Character",
-   Callback = function() if lp.Character then lp.Character:BreakJoints() end end,
+MainTab:CreateSlider({
+   Name = "WalkSpeed",
+   Range = {16, 200},
+   Increment = 1,
+   CurrentValue = 16,
+   Callback = function(v) if lp.Character then lp.Character.Humanoid.WalkSpeed = v end end,
 })
 
-Rayfield:Notify({Title = "IDK AI", Content = "Script ready for English servers!", Duration = 5})
+Rayfield:Notify({
+    Title = "idkkkk hub",
+    Content = "Hybrid AI is ready. No API key needed!",
+    Duration = 5
+})
