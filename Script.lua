@@ -1,63 +1,86 @@
 --[[ 
-    IDK AI v11.0 - HYBRID ENGINE
-    Поддержка: Legacy ChatService + TextChatService (одновременно)
-    Слушается: Владельца и всех игроков
-    Функции: Полноценный ИИ с ответами в чат
+    IDK AI v12.0 - QUANTUM BRAIN EDITION
+    The most advanced AI system for Roblox Executors (Delta, Wave, etc.)
+    Features: Intelligent Chatting, Command Execution, Multi-Language Support.
 ]]
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "idkkkk hub | v11.0 AI",
-   LoadingTitle = "Запуск гибридного движка...",
+   Name = "idkkkk hub | v12.0 Quantum AI",
+   LoadingTitle = "Synthesizing Neural Pathways...",
    LoadingSubtitle = "by IDKKK team",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
 
+-- [[ SERVICES & VARIABLES ]]
 local lp = game:GetService("Players").LocalPlayer
 local players = game:GetService("Players")
 local run_svc = game:GetService("RunService")
 local tcs = game:GetService("TextChatService")
+local http = game:GetService("HttpService")
 
 local settings = {
     active = false,
     following = nil,
-    prefix = "idkai"
+    brain_power = "High",
+    prefix = "idkai",
+    chat_mode = "Conversational"
 }
 
--- [[ УНИВЕРСАЛЬНЫЙ ЧАТ (ОТПРАВКА) ]]
-local function say(msg)
-    local success, err = pcall(function()
+-- [[ UNIVERSAL CHAT ADAPTER ]]
+local function speak(text)
+    task.spawn(function()
         if tcs.ChatVersion == Enum.ChatVersion.TextChatService then
             local channel = tcs:FindFirstChild("RBXGeneral", true) or tcs:FindFirstChild("All", true)
-            if channel then channel:SendAsync(msg) end
+            if channel then channel:SendAsync(text) end
         else
             local event = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
             if event then
-                event.SayMessageRequest:FireServer(msg, "All")
+                event.SayMessageRequest:FireServer(text, "All")
             end
         end
     end)
 end
 
--- [[ МОЗГ ИИ (ОБРАБОТКА ЛОГИКИ) ]]
-local function processAI(sender, message)
+-- [[ NEURAL CHATBOT LOGIC ]]
+-- Имитация ответов ИИ для общения, когда нет явной команды
+local responses = {
+    greeting = {"Hello! How can I assist you today?", "Hi there! IDK AI is at your service.", "Greetings, human!"},
+    unknown = {"That's interesting, tell me more.", "I'm still learning, but I hear you!", "My neural circuits are buzzing from that thought."},
+    creator = {"I was created by the legendary IDKKK team.", "My origin traces back to the idkkkk hub development labs."},
+    status = {"All systems functional.", "Neural load is at 14%. I'm feeling great!"}
+}
+
+local function getAiResponse(msg)
+    if msg:find("hello") or msg:find("привет") or msg:find("hi") then
+        return responses.greeting[math.random(#responses.greeting)]
+    elseif msg:find("who") or msg:find("кто") or msg:find("создал") then
+        return responses.creator[math.random(#responses.creator)]
+    elseif msg:find("how") or msg:find("как") or msg:find("дела") then
+        return "I am functioning within optimal parameters. How are you?"
+    end
+    return responses.unknown[math.random(#responses.unknown)]
+end
+
+-- [[ MAIN INTELLIGENCE UNIT ]]
+local function handleIntelligence(sender, message)
     if not settings.active then return end
     
-    local msg = message:lower()
-    -- Проверка на префикс idkai
-    if not msg:find(settings.prefix) then return end
+    local raw = message:lower()
+    if not raw:find(settings.prefix) then return end
     
-    -- Ответ системы
-    local function respond(text)
-        say(sender.Name .. ", " .. text)
-    end
+    -- Очистка текста
+    local clean = raw:gsub(settings.prefix, ""):gsub("^%s*(.-)%s*$", "%1")
+    
+    -- 1. СЕКТОР КОМАНД (EXECUTION)
+    local isCommand = false
 
-    -- Команда: Прыжок
-    if msg:find("jump") or msg:find("прыг") then
-        local n = tonumber(msg:match("%d+")) or 1
-        respond("I'm jumping " .. n .. " times!")
+    if clean:find("jump") or clean:find("прыг") then
+        isCommand = true
+        local n = tonumber(clean:match("%d+")) or 1
+        speak("Executing jump sequence: " .. n .. " times.")
         task.spawn(function()
             for i = 1, n do
                 if lp.Character and lp.Character:FindFirstChild("Humanoid") then
@@ -66,110 +89,102 @@ local function processAI(sender, message)
                 task.wait(0.6)
             end
         end)
-        return
-    end
-
-    -- Команда: Следование
-    if msg:find("follow") or msg:find("иди за") then
+    
+    elseif clean:find("follow") or clean:find("иди за") or clean:find("за мной") then
+        isCommand = true
         settings.following = sender
-        respond("Understood. I will follow you now.")
-        return
-    end
-
-    -- Команда: Остановка
-    if msg:find("stop") or msg:find("стой") then
+        speak("Target identified: " .. sender.Name .. ". Initiating follow protocol.")
+    
+    elseif clean:find("stop") or clean:find("стой") or clean:find("хватит") then
+        isCommand = true
         settings.following = nil
-        respond("Stopping. Waiting for next command.")
-        return
-    end
-
-    -- Команда: Смерть/Ресет
-    if msg:find("reset") or msg:find("kill") or msg:find("умри") then
-        respond("Self-destruction initiated. See you soon!")
+        speak("Stopping all physical actions.")
+    
+    elseif clean:find("reset") or clean:find("kill") or clean:find("умри") then
+        isCommand = true
+        speak("Initiating emergency system reboot...")
         if lp.Character then lp.Character:BreakJoints() end
-        return
+
+    elseif clean:find("speed") or clean:find("скорость") then
+        isCommand = true
+        local s = tonumber(clean:match("%d+")) or 16
+        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+            lp.Character.Humanoid.WalkSpeed = s
+            speak("Internal clock speed adjusted. Movement speed: " .. s)
+        end
     end
 
-    -- Команда: Сказать
-    if msg:find("say") or msg:find("скажи") then
-        local text = message:match("[sS][aA][yY]%s+(.+)") or message:match("скажи%s+(.+)")
-        if text then say(text) end
-        return
+    -- 2. СЕКТОР ОБЩЕНИЯ (CONVERSATION)
+    if not isCommand then
+        local aiReply = getAiResponse(clean)
+        speak(sender.Name .. ", " .. aiReply)
     end
-
-    -- Если ничего не подошло
-    respond("sorry, its not added in my system:( try jump, follow or say.")
 end
 
--- [[ ГИБРИДНЫЙ ПЕРЕХВАТЧИК ЧАТА (СЛУШАТЕЛЬ) ]]
-
--- 1. Для старого чата (Legacy)
-local function hookLegacy(p)
-    p.Chatted:Connect(function(m)
-        processAI(p, m)
-    end)
+-- [[ UNIVERSAL HOOKS ]]
+for _, p in pairs(players:GetPlayers()) do
+    p.Chatted:Connect(function(m) handleIntelligence(p, m) end)
 end
+players.PlayerAdded:Connect(function(p)
+    p.Chatted:Connect(function(m) handleIntelligence(p, m) end)
+end)
 
-for _, p in pairs(players:GetPlayers()) do hookLegacy(p) end
-players.PlayerAdded:Connect(hookLegacy)
-
--- 2. Для нового чата (TextChatService)
 if tcs.ChatVersion == Enum.ChatVersion.TextChatService then
     tcs.MessageReceived:Connect(function(data)
         if data.TextSource then
             local sender = players:GetPlayerByUserId(data.TextSource.UserId)
-            if sender then
-                processAI(sender, data.Text)
-            end
+            if sender then handleIntelligence(sender, data.Text) end
         end
     end)
 end
 
--- [[ ЦИКЛ ДВИЖЕНИЯ ]]
+-- [[ MOVEMENT LOGIC ]]
 run_svc.Heartbeat:Connect(function()
     if settings.active and settings.following and settings.following.Character then
+        local root = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
         local target = settings.following.Character:FindFirstChild("HumanoidRootPart")
-        if lp.Character and lp.Character:FindFirstChild("Humanoid") and target then
-            lp.Character.Humanoid:MoveTo(target.Position + Vector3.new(3, 0, 3))
+        if root and target then
+            lp.Character.Humanoid:MoveTo(target.Position + Vector3.new(2, 0, 2))
         end
     end
 end)
 
--- [[ ИНТЕРФЕЙС ]]
-local MainTab = Window:CreateTab("IDK AI", "bot")
+-- [[ UI DESIGN ]]
+local MainTab = Window:CreateTab("Quantum Brain", "zap")
 local VisualTab = Window:CreateTab("Visuals", "eye")
 
 MainTab:CreateToggle({
-   Name = "Активировать ИИ",
+   Name = "Activate Quantum AI",
    CurrentValue = false,
    Callback = function(v)
        settings.active = v
        if v then
-           say("IDK AI v11.0 Online! Write 'idkai' followed by your wish to command me.")
+           speak("IDK AI v12.0 Activated. Neural pathways initialized. Ask me anything or give a command!")
        else
            settings.following = nil
        end
    end,
 })
 
-MainTab:CreateSection("Инструкция")
+MainTab:CreateSection("Instructions")
 MainTab:CreateParagraph({
-    Title = "Как использовать:",
-    Content = "Напишите в чат: idkai [команда]\nКоманды: jump (прыгнуть), follow (следовать), stop (стой), say (скажи), reset (сброс)."
+    Title = "How to talk to me:",
+    Content = "1. Commands: idkai jump 5, idkai follow me, idkai speed 50, idkai reset.\n2. Chat: idkai how are you?, idkai who created you?\n3. I listen to EVERYONE, including you."
 })
 
 VisualTab:CreateToggle({
-   Name = "Player ESP",
+   Name = "AI Awareness ESP",
    CurrentValue = false,
    Callback = function(v)
        for _, p in pairs(players:GetPlayers()) do
            if p ~= lp and p.Character then
                local h = p.Character:FindFirstChildOfClass("Highlight") or Instance.new("Highlight", p.Character)
                h.Enabled = v
-               h.FillColor = Color3.fromRGB(0, 255, 255)
+               h.FillColor = Color3.fromRGB(170, 0, 255)
+               h.OutlineColor = Color3.fromRGB(255, 255, 255)
            end
        end
    end,
 })
 
-Rayfield:Notify({Title = "IDK AI", Content = "Гибридный движок чата запущен!", Duration = 5})
+Rayfield:Notify({Title = "QUANTUM BRAIN", Content = "IDK AI v12.0 is fully operational!", Duration = 5})
