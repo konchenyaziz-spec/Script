@@ -1,7 +1,6 @@
 --[[
-    IDKKKK HUB v1.2.1
-    STABLE BUILD
-credits:idk command for creating with me:j
+    IDKKKK HUB v1.2.2
+    FIXED BUILD
 ]]
 
 if getgenv().idkkkk_executed then return end
@@ -11,7 +10,6 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 local plrs = game:GetService("Players")
 local lp = plrs.LocalPlayer
 local run_svc = game:GetService("RunService")
-local input_svc = game:GetService("UserInputService")
 
 local visual_settings = {
     boxes = false,
@@ -19,59 +17,16 @@ local visual_settings = {
     jumpcircles = false
 }
 
--- [[ ПЛАВАЮЩАЯ КНОПКА ]]
-local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-local ToggleButton = Instance.new("TextButton", ScreenGui)
-ToggleButton.Size = UDim2.new(0, 45, 0, 45)
-ToggleButton.Position = UDim2.new(0, 15, 0.5, 0)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-ToggleButton.Text = "IDK"
-ToggleButton.TextColor3 = Color3.new(1, 1, 1)
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.TextSize = 14
-ToggleButton.Visible = false
-local corner = Instance.new("UICorner", ToggleButton)
-corner.CornerRadius = ToolUnit.new(0.5, 0)
-
--- Драг кнопки (для телефонов)
-local dragging, dragInput, dragStart, startPos
-ToggleButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = ToggleButton.Position
-    end
-end)
-input_svc.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        ToggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-input_svc.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType.Touch then
-        dragging = false
-    end
-end)
-
 -- [[ ОКНО ]]
 local Window = Fluent:CreateWindow({
     Title = "idkkkk HUB",
-    SubTitle = "v1.2.1 Stable",
+    SubTitle = "v1.2.2",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,
+    Acrylic = false, -- Отключил акрил для стабильности на мобилках
     Theme = "Darker",
     MinimizeKey = Enum.KeyCode.RightControl
 })
-
-ToggleButton.MouseButton1Click:Connect(function()
-    Window:Minimize()
-end)
-
-run_svc.RenderStepped:Connect(function()
-    ToggleButton.Visible = Window.Minimized
-end)
 
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" }),
@@ -131,12 +86,12 @@ local function onJump(old, new)
     end
 end
 
-lp.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid").StateChanged:Connect(onJump)
-end)
 if lp.Character and lp.Character:FindFirstChild("Humanoid") then
     lp.Character.Humanoid.StateChanged:Connect(onJump)
 end
+lp.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid").StateChanged:Connect(onJump)
+end)
 
 -- [[ TROLLING ]]
 Tabs.Troll:AddButton({ Title = "Fling Players", Callback = function()
@@ -157,11 +112,12 @@ Tabs.Visuals:AddToggle("CHat", { Title = "China Hat", Default = false, Callback 
 Tabs.Visuals:AddToggle("JCir", { Title = "Jump Circles", Default = false, Callback = function(v) visual_settings.jumpcircles = v end })
 
 run_svc.RenderStepped:Connect(function()
-    -- China Hat
+    -- China Hat logic
     if visual_settings.chinahat and lp.Character and lp.Character:FindFirstChild("Head") then
         local head = lp.Character.Head
-        local hat = head:FindFirstChild("ChinaHat") or Instance.new("Part")
-        if not head:FindFirstChild("ChinaHat") then
+        local hat = head:FindFirstChild("ChinaHat")
+        if not hat then
+            hat = Instance.new("Part")
             hat.Name = "ChinaHat"
             hat.CanCollide = false
             hat.Parent = head
@@ -177,25 +133,35 @@ run_svc.RenderStepped:Connect(function()
         lp.Character.Head.ChinaHat:Destroy()
     end
 
-    -- 3D Box ESP
-    if visual_settings.boxes then
-        for _, p in pairs(plrs:GetPlayers()) do
-            if p ~= lp and p.Character then
-                local b = p.Character:FindFirstChild("IDK_BOX") or Instance.new("SelectionBox")
-                if not p.Character:FindFirstChild("IDK_BOX") then
-                    b.Name = "IDK_BOX"
-                    b.Adornee = p.Character
-                    b.Parent = p.Character
-                    b.LineThickness = 0.04
-                    b.Color3 = Color3.new(1, 0, 0)
+    -- 3D Box ESP logic
+    for _, p in pairs(plrs:GetPlayers()) do
+        if p ~= lp and p.Character then
+            local box = p.Character:FindFirstChild("IDK_BOX")
+            if visual_settings.boxes then
+                if not box then
+                    box = Instance.new("BoxHandleAdornment")
+                    box.Name = "IDK_BOX"
+                    box.AlwaysOnTop = true
+                    box.ZIndex = 5
+                    box.Adornee = p.Character
+                    box.Color3 = Color3.new(1, 0, 0)
+                    box.Transparency = 0.5
+                    box.Size = p.Character:GetExtentsSize()
+                    box.Parent = p.Character
                 end
+                box.Size = p.Character:GetExtentsSize()
+            else
+                if box then box:Destroy() end
             end
-        end
-    else
-        for _, p in pairs(plrs:GetPlayers()) do
-            if p.Character and p.Character:FindFirstChild("IDK_BOX") then p.Character.IDK_BOX:Destroy() end
         end
     end
 end)
+
+-- Вместо шарика используем уведомление о кнопке
+Fluent:Notify({
+    Title = "idkkkk HUB",
+    Content = "Нажми RightControl (или кнопку в углу), чтобы скрыть меню.",
+    Duration = 5
+})
 
 Window:SelectTab(1)
