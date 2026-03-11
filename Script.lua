@@ -1,168 +1,175 @@
---[[
-    IDK AI v8.0 - FULL NEURAL INTELLIGENCE
-    Powered by Hybrid NLP (Natural Language Processing)
-    Оптимизировано для Delta / ПК.
-    Слушается всех, включая владельца.
+--[[ 
+    IDK AI v11.0 - HYBRID ENGINE
+    Поддержка: Legacy ChatService + TextChatService (одновременно)
+    Слушается: Владельца и всех игроков
+    Функции: Полноценный ИИ с ответами в чат
 ]]
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "idkkkk hub | v8.0 NEURAL AI",
-   LoadingTitle = "Запуск нейронной сети...",
+   Name = "idkkkk hub | v11.0 AI",
+   LoadingTitle = "Запуск гибридного движка...",
    LoadingSubtitle = "by IDKKK team",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false 
 })
 
 local lp = game:GetService("Players").LocalPlayer
-local run_svc = game:GetService("RunService")
 local players = game:GetService("Players")
-local http = game:GetService("HttpService")
+local run_svc = game:GetService("RunService")
+local tcs = game:GetService("TextChatService")
 
 local settings = {
-    ai_active = false,
+    active = false,
     following = nil,
-    learning_mode = true,
-    personality = "Friendly Robot"
+    prefix = "idkai"
 }
 
--- [[ УНИВЕРСАЛЬНЫЙ ОТПРАВЩИК СООБЩЕНИЙ ]]
-local function aiChat(msg)
-    local chatEvents = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-    if chatEvents and chatEvents:FindFirstChild("SayMessageRequest") then
-        chatEvents.SayMessageRequest:FireServer(msg, "All")
-    else
-        local tcs = game:GetService("TextChatService")
-        if tcs and tcs.ChatVersion == Enum.ChatVersion.TextChatService then
+-- [[ УНИВЕРСАЛЬНЫЙ ЧАТ (ОТПРАВКА) ]]
+local function say(msg)
+    local success, err = pcall(function()
+        if tcs.ChatVersion == Enum.ChatVersion.TextChatService then
             local channel = tcs:FindFirstChild("RBXGeneral", true) or tcs:FindFirstChild("All", true)
             if channel then channel:SendAsync(msg) end
+        else
+            local event = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+            if event then
+                event.SayMessageRequest:FireServer(msg, "All")
+            end
         end
-    end
+    end)
 end
 
--- [[ НЕЙРОННЫЙ ОБРАБОТЧИК (NLP) ]]
--- Эта функция имитирует работу нейросети, разбирая структуру предложения
-local function neuralProcess(sender, text)
-    if not settings.ai_active then return end
+-- [[ МОЗГ ИИ (ОБРАБОТКА ЛОГИКИ) ]]
+local function processAI(sender, message)
+    if not settings.active then return end
     
-    local raw = text:lower()
-    if not raw:find("idkai") then return end
+    local msg = message:lower()
+    -- Проверка на префикс idkai
+    if not msg:find(settings.prefix) then return end
+    
+    -- Ответ системы
+    local function respond(text)
+        say(sender.Name .. ", " .. text)
+    end
 
-    -- Очистка текста от префикса для анализа смысла
-    local query = raw:gsub("idkai", ""):gsub("^%s*(.-)%s*$", "%1")
-
-    -- Логика "Мышления"
-    local intent = {
-        jump = (query:find("jump") or query:find("hop") or query:find("прыг")),
-        follow = (query:find("follow") or query:find("come") or query:find("за мной") or query:find("иди за")),
-        stop = (query:find("stop") or query:find("stay") or query:find("стой") or query:find("хватит")),
-        say = (query:find("say") or query:find("tell") or query:find("скажи")),
-        speed = (query:find("speed") or query:find("fast") or query:find("скорость")),
-        reset = (query:find("reset") or query:find("kill") or query:find("умри") or query:find("сброс"))
-    }
-
-    -- Исполнение намерений
-    if intent.jump then
-        local num = tonumber(query:match("(%d+)")) or 1
-        aiChat("Of course, " .. sender.Name .. "! I'll jump " .. num .. " times for you.")
+    -- Команда: Прыжок
+    if msg:find("jump") or msg:find("прыг") then
+        local n = tonumber(msg:match("%d+")) or 1
+        respond("I'm jumping " .. n .. " times!")
         task.spawn(function()
-            for i = 1, num do
+            for i = 1, n do
                 if lp.Character and lp.Character:FindFirstChild("Humanoid") then
                     lp.Character.Humanoid.Jump = true
                 end
-                task.wait(0.7)
+                task.wait(0.6)
             end
         end)
+        return
     end
 
-    if intent.follow then
+    -- Команда: Следование
+    if msg:find("follow") or msg:find("иди за") then
         settings.following = sender
-        aiChat("Understood. I am now your personal assistant, " .. sender.Name .. ". Leading the way!")
+        respond("Understood. I will follow you now.")
+        return
     end
 
-    if intent.stop then
+    -- Команда: Остановка
+    if msg:find("stop") or msg:find("стой") then
         settings.following = nil
-        aiChat("Task cancelled. I am staying here.")
+        respond("Stopping. Waiting for next command.")
+        return
     end
 
-    if intent.speed then
-        local s = tonumber(query:match("(%d+)")) or 50
-        if lp.Character then 
-            lp.Character.Humanoid.WalkSpeed = s
-            aiChat("My internal gears are turning faster! Speed set to " .. s)
-        end
-    end
-
-    if intent.reset then
-        aiChat("Rebooting systems... (Character Reset)")
+    -- Команда: Смерть/Ресет
+    if msg:find("reset") or msg:find("kill") or msg:find("умри") then
+        respond("Self-destruction initiated. See you soon!")
         if lp.Character then lp.Character:BreakJoints() end
+        return
     end
 
-    if intent.say then
-        local speech = text:match("[sS][aA][yY]%s+(.+)") or text:match("скажи%s+(.+)")
-        if speech then aiChat(speech) end
+    -- Команда: Сказать
+    if msg:find("say") or msg:find("скажи") then
+        local text = message:match("[sS][aA][yY]%s+(.+)") or message:match("скажи%s+(.+)")
+        if text then say(text) end
+        return
     end
 
-    -- Если ИИ не нашел команд, но к нему обратились - он просто общается
-    local commandsActive = false
-    for _, v in pairs(intent) do if v then commandsActive = true end end
-
-    if not commandsActive then
-        aiChat("I heard you, " .. sender.Name .. ". But I'm not sure what you mean. Could you try using words like 'jump', 'follow' or 'speed'?")
-    end
+    -- Если ничего не подошло
+    respond("sorry, its not added in my system:( try jump, follow or say.")
 end
 
--- [[ ПОДКЛЮЧЕНИЕ ]]
-players.PlayerChatted:Connect(neuralProcess)
+-- [[ ГИБРИДНЫЙ ПЕРЕХВАТЧИК ЧАТА (СЛУШАТЕЛЬ) ]]
 
--- Цикл следования
+-- 1. Для старого чата (Legacy)
+local function hookLegacy(p)
+    p.Chatted:Connect(function(m)
+        processAI(p, m)
+    end)
+end
+
+for _, p in pairs(players:GetPlayers()) do hookLegacy(p) end
+players.PlayerAdded:Connect(hookLegacy)
+
+-- 2. Для нового чата (TextChatService)
+if tcs.ChatVersion == Enum.ChatVersion.TextChatService then
+    tcs.MessageReceived:Connect(function(data)
+        if data.TextSource then
+            local sender = players:GetPlayerByUserId(data.TextSource.UserId)
+            if sender then
+                processAI(sender, data.Text)
+            end
+        end
+    end)
+end
+
+-- [[ ЦИКЛ ДВИЖЕНИЯ ]]
 run_svc.Heartbeat:Connect(function()
-    if settings.ai_active and settings.following and settings.following.Character then
-        local hum = lp.Character and lp.Character:FindFirstChild("Humanoid")
+    if settings.active and settings.following and settings.following.Character then
         local target = settings.following.Character:FindFirstChild("HumanoidRootPart")
-        if hum and target then
-            hum:MoveTo(target.Position + Vector3.new(math.random(-2,2), 0, math.random(-2,2)))
+        if lp.Character and lp.Character:FindFirstChild("Humanoid") and target then
+            lp.Character.Humanoid:MoveTo(target.Position + Vector3.new(3, 0, 3))
         end
     end
 end)
 
--- [[ ВКЛАДКИ ]]
-local AiTab = Window:CreateTab("IDK AI Core", "cpu")
+-- [[ ИНТЕРФЕЙС ]]
+local MainTab = Window:CreateTab("IDK AI", "bot")
 local VisualTab = Window:CreateTab("Visuals", "eye")
 
-AiTab:CreateToggle({
-   Name = "Активировать Нейросеть",
+MainTab:CreateToggle({
+   Name = "Активировать ИИ",
    CurrentValue = false,
    Callback = function(v)
-       settings.ai_active = v
+       settings.active = v
        if v then
-           aiChat("IDK AI Neural Network v8.0 is now ONLINE. I can understand complex requests in English and Russian!")
+           say("IDK AI v11.0 Online! Write 'idkai' followed by your wish to command me.")
        else
            settings.following = nil
        end
    end,
 })
 
-AiTab:CreateSection("AI Intelligence Level")
-AiTab:CreateLabel("Current Model: Hybrid LLM-Lite")
-
-AiTab:CreateParagraph({
-    Title = "Как это работает:",
-    Content = "Этот ИИ анализирует 'намерения' в твоей фразе. Ты можешь писать не только команды, но и обычные предложения. \nПример: 'idkai пожалуйста иди за мной' - он поймет слово 'иди за' как команду follow."
+MainTab:CreateSection("Инструкция")
+MainTab:CreateParagraph({
+    Title = "Как использовать:",
+    Content = "Напишите в чат: idkai [команда]\nКоманды: jump (прыгнуть), follow (следовать), stop (стой), say (скажи), reset (сброс)."
 })
 
 VisualTab:CreateToggle({
-   Name = "ESP (Highlight)",
+   Name = "Player ESP",
    CurrentValue = false,
    Callback = function(v)
        for _, p in pairs(players:GetPlayers()) do
            if p ~= lp and p.Character then
                local h = p.Character:FindFirstChildOfClass("Highlight") or Instance.new("Highlight", p.Character)
                h.Enabled = v
+               h.FillColor = Color3.fromRGB(0, 255, 255)
            end
        end
    end,
 })
 
-Rayfield:Notify({Title = "IDK AI", Content = "Полноценный ИИ загружен!", Duration = 5})
+Rayfield:Notify({Title = "IDK AI", Content = "Гибридный движок чата запущен!", Duration = 5})
